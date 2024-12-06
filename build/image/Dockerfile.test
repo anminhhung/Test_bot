@@ -1,0 +1,24 @@
+ARG BUILD_IMAGE
+
+##################################################################################
+FROM ${BUILD_IMAGE} as unit-test
+
+ARG SERVICE_NAME
+ARG SONAR_PROJECT_KEY
+ARG SONAR_HOST_URL
+ARG SONAR_TOKEN
+
+COPY . /app/
+
+WORKDIR /app
+
+RUN ls -lah 
+
+RUN dotnet publish ${SERVICE_NAME}.sln -c Release -o /app/${SERVICE_NAME}/Publish/
+
+RUN mkdir -p /app/test/export-test-results && dotnet test ${SERVICE_NAME}.sln --no-build -c "Release" --logger:"junit;LogFilePath=../export-test-results/junit/junit-test-result.xml;MethodFormat=Class;FailureBodyFormat=Verbose" /p:CollectCoverage=true /p:CoverletOutput="../export-test-results/coverage_results" /p:MergeWith="../coverage_results/coverage.json" /p:CoverletOutputFormat=\"opencover,cobertura\" || exit 0
+##################################################################################
+FROM scratch as export-test-results
+
+COPY --from=unit-test /app/test/export-test-results/ .
+

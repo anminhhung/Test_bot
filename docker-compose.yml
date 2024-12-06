@@ -1,0 +1,56 @@
+version: '3.9'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: db
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - bot
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "9200:9200" # Redis mặc định dùng cổng 6379
+    networks:
+      - bot
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile # Đổi tên nếu cần
+    container_name: backend
+    environment:
+      http_proxy: 
+      https_proxy:
+      no_proxy:
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    networks:
+      - bot
+    deploy:
+      resources:
+        limits:
+          memory: 3g
+          cpus: '0.5'
+        reservations:
+          memory: 128m
+    extra_hosts:
+
+volumes:
+  mysql_data:
+
+networks:
+  bot:
+    driver: bridge
